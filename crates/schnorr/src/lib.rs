@@ -1,0 +1,93 @@
+use secp256k1::{Parity, PublicKey, Scalar, Secp256k1, SecretKey};
+
+use crate::utils::{generate_challenge_hash, generate_nonce_key};
+
+pub mod utils;
+
+/// Ensure secret key produces even Y public key
+pub fn normalize_secret_key(secret_key: SecretKey) -> SecretKey {
+    let secp = Secp256k1::new();
+
+    let mut sk = secret_key;
+    let (_, parity) = PublicKey::from_secret_key(&secp, &sk).x_only_public_key();
+
+    if parity == Parity::Odd {
+        sk = sk.negate();
+    }
+
+    sk
+}
+
+/// Generate nonce key (r)
+pub fn generate_nonce(
+    aux: &[u8; 32],
+    secret_key: &SecretKey,
+    msg: &[u8; 32],
+) -> SecretKey {
+    generate_nonce_key(aux, secret_key, msg)
+}
+
+/// Generate challenge hash e = H(R || P || m)
+pub fn generate_challenge(
+    rx: &[u8; 32],
+    pubkey_x: &[u8; 32],
+    msg: &[u8; 32],
+) -> secp256k1::Scalar {
+    generate_challenge_hash(rx, pubkey_x, msg)
+}
+
+/// Generate Schnorr signature
+pub fn generate_signature(
+    secret_key: SecretKey,
+    msg: &[u8; 32],
+    aux: [u8; 32],
+) -> ([u8; 32], [u8; 32], [u8; 32]) {
+
+    let secp = Secp256k1::new();
+
+    let sk = normalize_secret_key(secret_key);
+
+    let nonce_secret = generate_nonce(&aux, &sk, msg);
+
+    let nonce_pubkey = PublicKey::from_secret_key(&secp, &nonce_secret);
+
+    let (signer_xonly, _) =
+        PublicKey::from_secret_key(&secp, &sk).x_only_public_key();
+
+    let (nonce_xonly, _) = nonce_pubkey.x_only_public_key();
+
+    let pubkey_x = signer_xonly.serialize();
+    let rx = nonce_xonly.serialize();
+
+    let challenge = generate_challenge(&rx, &pubkey_x, msg);
+
+    let ed = sk.mul_tweak(&challenge).expect("valid tweak");
+
+    let ed_scalar =
+        Scalar::from_be_bytes(ed.secret_bytes()).unwrap();
+
+    let s = nonce_secret
+        .add_tweak(&ed_scalar)
+        .expect("valid tweak")
+        .secret_bytes();
+
+    (pubkey_x, rx, s)
+}
+
+/// Encode precompile input
+pub fn encode_precompile_input(
+    pubkey_x: &[u8; 32],
+    rx: &[u8; 32],
+    s: &[u8; 32],
+    msg: &[u8],
+) -> Vec<u8> {
+
+    let mut input = Vec::with_capacity(128);
+
+    input.extend_from_slice(pubkey_x);
+    input.extend_from_slice(rx);
+    input.extend_from_slice(s);
+    input.extend_from_slice(msg);
+
+    input
+}
