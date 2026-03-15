@@ -8,7 +8,7 @@ const SUM_POINT =
 
 async function main() {
   const contractAddress = "0xB1D1F00B6Cd1e148410B50F319BcbFa65ea367b6";
-  const bls = await hre.ethers.getContractFactory("BlsContract");
+  const bls = await hre.ethers.getContractFactory("BLSContract");
   const blsContract = bls.attach(contractAddress);
 
   const tx1 = await blsContract.performG1Msm(G1_POINTS, SUM_POINT);

@@ -9,6 +9,8 @@ import "../Precompiles.sol";
 /// multi-scalar multiplication (MSM), signature aggregation, and mapping field
 /// elements to elliptic curve points.
 contract BLSContract {
+    event LogG1Point(G1Point point);
+    event LogG2Point(G2Point point);
 
     /// @notice Adds two G1 points using the BLS precompile.
     /// @param a First G1 point.
@@ -17,8 +19,9 @@ contract BLSContract {
     function addG1Points(
         G1Point memory a,
         G1Point memory b
-    ) public view returns (G1Point memory result) {
-        return BLS.g1AddPoint(a, b);
+    ) public returns (G1Point memory result) {
+        result = BLS.g1AddPoint(a, b);
+        emit LogG1Point(result);
     }
 
     /// @notice Adds two G2 points using the BLS precompile.
@@ -28,8 +31,9 @@ contract BLSContract {
     function addG2Points(
         G2Point memory a,
         G2Point memory b
-    ) public view returns (G2Point memory result) {
-        return BLS.g2AddPoint(a, b);
+    ) public returns (G2Point memory result) {
+        result = BLS.g2AddPoint(a, b);
+        emit LogG2Point(result);
     }
 
     /// @notice Performs a multi-scalar multiplication (MSM) on G1 points.

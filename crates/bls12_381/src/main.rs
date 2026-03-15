@@ -2,7 +2,7 @@ use bls12_381::*;
 
 fn main() {
     generate_g1_add_params();
-    generate_g1_msm_params(2);
+    let _ = generate_g1_msm_params(2);
 
     generate_pairing_pairs(2, true);
 

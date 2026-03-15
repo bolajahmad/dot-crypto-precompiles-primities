@@ -7,8 +7,8 @@ const SUM_POINT =
   "0x000000000000000000000000000000001036ae700a4e03eeefb1a637b31e0bb58c2d143f8a64e8348135d3176e93e8fe184b5a1e9bbc53299ba5d46f6558a5b0000000000000000000000000000000000c35acb3244476057785148e404206d59d9c7ce4b07f5a9d0cb1324dc8bac5f090cea9405273e7ff2284aadab2a4a3560000000000000000000000000000000018146bf6605a61638d17d065281e151675a28e8942e53952ee4d6aa472e4460a9917eb565fe0f61bda67a50329d3e8c400000000000000000000000000000000142b4277d9e0d6f40da65cf2f55a7100e5722a0fc6731c6b2ce56f144a8f89c26fcdcbc00da54d61b071d47e2e34e83a";
 
 async function main() {
-  const contractAddress = "0xFa285e7D910a22e5589146F7c8e430a46647e6a3";
-  const bls = await hre.ethers.getContractFactory("BlsContract");
+  const contractAddress = "0xB1D1F00B6Cd1e148410B50F319BcbFa65ea367b6";
+  const bls = await hre.ethers.getContractFactory("BLSContract");
   const blsContract = bls.attach(contractAddress);
 
   const tx1 = await blsContract.performG2Msm(G2_POINTS, SUM_POINT);

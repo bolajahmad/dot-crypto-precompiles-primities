@@ -8,11 +8,11 @@ const SUM_POINT =
   "0x0000000000000000000000000000000007d6d4e76f74b1c7de880cf23b20960cdb8b8f027ad498adf2e85839d339d6ad8b8cd5d152f0919674cc7341f404e8c1000000000000000000000000000000000d1c9ae33bddafed866a062ac3fd8a0e63e853d6d63cd50fa4fdbe985c7458bead2e49ecad41091c8b7e55c09f4bb7b30000000000000000000000000000000007456aeb1bc1be06c5c8202316e98e210d89e952994979c5f55df6f607acea4b45bcc9542a054386c02254648d902a42000000000000000000000000000000000731ff25fd3ccaeb6fae14c0dc80ce7c84a4f9f3145f53f2e9746717d0e900ed3fbba130fea7e74ad51602c823f5c318";
 
 async function main() {
-  const contractAddress = "0xFa285e7D910a22e5589146F7c8e430a46647e6a3";
-  const bls = await hre.ethers.getContractFactory("BlsContract");
+  const contractAddress = "0xB1D1F00B6Cd1e148410B50F319BcbFa65ea367b6";
+  const bls = await hre.ethers.getContractFactory("BLSContract");
   const blsContract = bls.attach(contractAddress);
 
-  const tx1 = await blsContract.addBlsG2Points(G1_POINT, G1_POINT_2, SUM_POINT);
+  const tx1 = await blsContract.addG2Points(G1_POINT, G1_POINT_2, SUM_POINT);
   const receipt = await tx1.wait();
 
   console.log({ receipt });
