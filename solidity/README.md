@@ -1,13 +1,39 @@
-# Sample Polkadot Hardhat Project
+# Solidity Precompile Libraries
 
-This project demonstrates how to use Hardhat with Polkadot. It comes with a sample contract, a test for that contract, and a Hardhat Ignition module that deploys that contract.
+This directory contains Solidity libraries that simplify interacting with the PVM cryptographic precompiles.
 
-1) Create a binary of the [`eth-rpc-adapter`](https://github.com/paritytech/polkadot-sdk/tree/master/substrate/frame/revive/rpc) and move it to `bin` folder at the root of your project. Alternatively, update your configuration file's `adapterConfig.adapterBinaryPath` to point to your local binary. Please check [Polkadot Hardhat docs](https://papermoonio.github.io/polkadot-mkdocs/develop/smart-contracts/dev-environments/hardhat/#testing-your-contract).
+Instead of manually constructing low-level calls, developers can import these libraries and call strongly-typed functions.
 
-2) Try running some of the following tasks:
+The libraries handle:
 
-```shell
-npx hardhat test
-npx hardhat node
-npx hardhat node && npx hardhat ignition deploy ./ignition/modules/MyToken.js --network localhost
+- ABI encoding
+- precompile address routing
+- decoding results
+
+Example usage:
+
 ```
+import "pvm-precompiles/BLS.sol";
+
+BLS.G1Point memory result = BLS.g1Add(a, b);
+```
+
+## Included Components
+
+- `contracts/Precompiles.sol`: low-level precompile address helpers
+- `contracts/modules/BLS.sol`: BLS operation wrappers
+- `contracts/modules/Schnorr.sol`: Schnorr verification wrappers
+- `contracts/types/*.sol`: strongly-typed structs shared across modules
+- `contracts/examples/*.sol`: sample usage contracts
+
+## Supported Flows
+
+- G1/G2 point addition via BLS module helpers
+- G1/G2 MSM payload execution paths
+- map-to-curve operation inputs/outputs
+- Schnorr verification integration
+- BLS single and batch signature verification workflows
+
+This structure improves developer experience when integrating advanced cryptographic primitives into contracts.
+
+Example contracts demonstrating usage are included in this directory.
