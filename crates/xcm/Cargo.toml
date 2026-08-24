@@ -1,0 +1,9 @@
+[package]
+name = "xcm"
+version = "0.1.0"
+edition = "2024"
+
+[dependencies]
+parity-scale-codec = { version = "3.6", features = ["derive"] }
+hex = "0.4.3"
+staging-xcm = "24.0.0"

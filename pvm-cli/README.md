@@ -267,3 +267,8 @@ SchnorrSignature memory sig = SchnorrSignature({
 - Invalid BLS/Schnorr payloads return a descriptive error and a non-zero exit code.
 - Most BLS commands support either full precompile hex input or Solidity-shaped JSON input.
 - `batch-smoke` is the fastest end-to-end local correctness check for batch signature flows.
+
+### XCM Usage
+
+The CLI exposes functionalities that allow interacting with XCM logic of all runtimes. The aim
+is to improve the experience of interacting with XCM logic.

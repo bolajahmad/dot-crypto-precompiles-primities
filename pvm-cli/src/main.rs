@@ -24,6 +24,8 @@
 //! pvmcli bls sign --secret-key <SK> --message "hello"
 //! pvmcli bls batch-sign-testdata --count 4 --output both
 //! pvmcli bls batch-smoke --count 4 --output summary
+//!
+//! pvmcli xcm decode <XCM_message>
 //! ```
 
 use clap::{Parser, Subcommand};
@@ -32,6 +34,8 @@ mod commands;
 mod utils;
 
 use commands::{bls::BlsCommands, schnorr::SchnorrCommands};
+
+use crate::commands::xcm::XcmCommands;
 
 /// PVM Precompiles CLI - Developer utility for cryptographic precompiles.
 #[derive(Parser)]
@@ -58,6 +62,12 @@ enum Commands {
         #[command(subcommand)]
         action: SchnorrCommands,
     },
+
+    /// Interact with XCM features (codec, dry-run, estimate, exec, submit)
+    Xcm {
+        #[command(subcommand)]
+        action: XcmCommands,
+    },
 }
 
 fn main() {
@@ -66,5 +76,6 @@ fn main() {
     match cli.command {
         Commands::Bls { action } => commands::bls::handle(action),
         Commands::Schnorr { action } => commands::schnorr::handle(action),
+        Commands::Xcm { action } => commands::xcm::handle(action),
     }
 }

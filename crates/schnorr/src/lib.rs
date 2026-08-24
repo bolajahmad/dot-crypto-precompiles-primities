@@ -22,20 +22,12 @@ pub fn normalize_secret_key(secret_key: SecretKey) -> SecretKey {
 }
 
 /// Generate nonce key (r)
-pub fn generate_nonce(
-    aux: &[u8; 32],
-    secret_key: &SecretKey,
-    msg: &[u8; 32],
-) -> SecretKey {
+pub fn generate_nonce(aux: &[u8; 32], secret_key: &SecretKey, msg: &[u8; 32]) -> SecretKey {
     generate_nonce_key(aux, secret_key, msg)
 }
 
 /// Generate challenge hash e = H(R || P || m)
-pub fn generate_challenge(
-    rx: &[u8; 32],
-    pubkey_x: &[u8; 32],
-    msg: &[u8; 32],
-) -> secp256k1::Scalar {
+pub fn generate_challenge(rx: &[u8; 32], pubkey_x: &[u8; 32], msg: &[u8; 32]) -> secp256k1::Scalar {
     generate_challenge_hash(rx, pubkey_x, msg)
 }
 
@@ -45,7 +37,6 @@ pub fn generate_signature(
     msg: &[u8; 32],
     aux: [u8; 32],
 ) -> ([u8; 32], [u8; 32], [u8; 32]) {
-
     let secp = Secp256k1::new();
 
     let sk = normalize_secret_key(secret_key);
@@ -54,8 +45,7 @@ pub fn generate_signature(
 
     let nonce_pubkey = PublicKey::from_secret_key(&secp, &nonce_secret);
 
-    let (signer_xonly, _) =
-        PublicKey::from_secret_key(&secp, &sk).x_only_public_key();
+    let (signer_xonly, _) = PublicKey::from_secret_key(&secp, &sk).x_only_public_key();
 
     let (nonce_xonly, _) = nonce_pubkey.x_only_public_key();
 
@@ -66,8 +56,7 @@ pub fn generate_signature(
 
     let ed = sk.mul_tweak(&challenge).expect("valid tweak");
 
-    let ed_scalar =
-        Scalar::from_be_bytes(ed.secret_bytes()).unwrap();
+    let ed_scalar = Scalar::from_be_bytes(ed.secret_bytes()).unwrap();
 
     let s = nonce_secret
         .add_tweak(&ed_scalar)
@@ -84,7 +73,6 @@ pub fn encode_precompile_input(
     s: &[u8; 32],
     msg: &[u8],
 ) -> Vec<u8> {
-
     let mut input = Vec::with_capacity(128);
 
     input.extend_from_slice(pubkey_x);
@@ -97,18 +85,13 @@ pub fn encode_precompile_input(
 
 /// Verify a Schnorr signature
 /// Returns true if the signature is valid, false otherwise.
-/// 
+///
 /// Verification algorithm:
 /// 1. Parse pubkey_x as x-coordinate of P (derive even y)
 /// 2. Parse rx as x-coordinate of R (derive even y)
 /// 3. Compute challenge e = H("PIP/challenge" || rx || pubkey_x || msg) mod n
 /// 4. Verify: s·G == R + e·P
-pub fn verify_signature(
-    pubkey_x: &[u8; 32],
-    rx: &[u8; 32],
-    s: &[u8; 32],
-    msg: &[u8; 32],
-) -> bool {
+pub fn verify_signature(pubkey_x: &[u8; 32], rx: &[u8; 32], s: &[u8; 32], msg: &[u8; 32]) -> bool {
     let secp = Secp256k1::new();
 
     // Parse public key (x-only, assume even y)

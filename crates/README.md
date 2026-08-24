@@ -25,6 +25,17 @@ Provides BLS12-381 helpers used by `pvmcli`, including:
 - map-to-curve helpers (`Fp -> G1`, `Fp2 -> G2`)
 - signature generation, verification, and batch aggregation helpers
 
+### `XCM`
+
+Provides a crate that allows users to:
+
+- Construct an XCM message
+- Inspect an XCM message
+- Validate/simulate an XCM message
+- Estimate the execution weights of an XCM message
+- Estimate the execution fee of an XCM message
+- Execute (or submit) an XCM message
+
 ## Typical Uses
 
 - deterministic test-vector generation for Solidity and runtime tests
