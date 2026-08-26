@@ -1,5 +1,7 @@
+use std::println;
+
 use clap::Subcommand;
-use xcm::decode_xcm_message;
+use xcm::{decode_xcm_message, XcmMessage};
 
 #[derive(Subcommand)]
 pub enum XcmCommands {
@@ -10,19 +12,33 @@ pub enum XcmCommands {
     },
 }
 
-fn print_decode_message(message: Vec<u8>, version: u32, size: usize) {
+fn print_decode_message(xcm: XcmMessage) {
     println!("\n Decoding XCM Message");
     println!("------------------------- \n");
 
     println!("Version:");
-    println!("  V{} \n", &version);
+    println!("  V{} \n", &xcm.version());
 
     println!("Instructions:");
-    println!("  {size}\n");
+    println!("  {}\n", &xcm.size());
 
-    let xcm_encoded_size = message.len();
     println!("Encoded Size:");
-    println!("  {xcm_encoded_size} bytes");
+    println!("  {} bytes", xcm.bytes());
+
+    for (index, instr) in xcm.instructions().iter().enumerate() {
+        println!("\n");
+        println!("[{index}] {}", instr.name);
+
+        for (key, lines) in &instr.params {
+            println!("      {}:", key);
+
+            for line in lines {
+                for sub_line in line.lines() {
+                    println!("         - {}", sub_line.trim_end());
+                }
+            }
+        }
+    }
 }
 
 pub fn handle(action: XcmCommands) {
@@ -30,8 +46,13 @@ pub fn handle(action: XcmCommands) {
         XcmCommands::Decode { message } => {
             let parsed_msg = message.strip_prefix("0x").unwrap_or(&message);
             match decode_xcm_message(parsed_msg.to_string()) {
-                Ok(xcm) => {}
-                Err(err) => {}
+                Ok(xcm) => {
+                    println!("XCM Decoded, {xcm:?}");
+                    print_decode_message(xcm);
+                }
+                Err(err) => {
+                    println!("An error occured, {err:?}");
+                }
             }
         }
     }

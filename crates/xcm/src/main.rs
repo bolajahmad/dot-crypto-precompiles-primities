@@ -1,4 +1,3 @@
-use parity_scale_codec::Encode;
 use staging_xcm::VersionedXcm;
 
 fn print_message(name: &str, version: &str, instructions: &[&str], encoded: Vec<u8>) {
@@ -81,6 +80,60 @@ mod v3 {
         );
     }
 }
+
+mod v5 {
+    use parity_scale_codec::Encode;
+    use staging_xcm::{
+        VersionedXcm,
+        v5::{Asset, Assets, Instruction, Location, OriginKind, Weight, Xcm},
+    };
+
+    use crate::print_message;
+
+    #[derive(Encode)]
+    pub enum RuntimeCall {
+        Transfer,
+    }
+
+    pub fn basic_transfer() {
+        // Basic XCM V5 Transfer Message
+        //
+        // WithdrawAsset
+        // PayFees
+        // Transact
+        // RefundSurplus
+
+        let asset = Asset::from((Location::here(), 1_000_000u128));
+        let assets: Assets = asset.clone().into();
+
+        let call_bytes = RuntimeCall::Transfer.encode();
+        let message = Xcm(vec![
+            Instruction::<()>::WithdrawAsset(assets.clone()),
+            Instruction::PayFees {
+                asset: asset.clone(),
+            },
+            Instruction::Transact {
+                origin_kind: OriginKind::SovereignAccount,
+                fallback_max_weight: Some(Weight::from_parts(1_000_000, 0)),
+                call: call_bytes.into(),
+            },
+            Instruction::RefundSurplus,
+        ]);
+        let encoded = VersionedXcm::V5(message).encode();
+
+        print_message(
+            "v5_basic_asset_transfer",
+            "V5",
+            &["WithdrawAsset", "PayFees", "Transact", "RefundSurplus"],
+            encoded,
+        );
+    }
+
+    pub fn generate() {
+        basic_transfer();
+    }
+}
 fn main() {
-    v3::generate();
+    // v3::generate();
+    v5::generate();
 }

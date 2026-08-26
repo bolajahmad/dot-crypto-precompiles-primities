@@ -11,6 +11,10 @@ use staging_xcm::{
         Asset as V4Asset, AssetId as V4Aid, Fungibility as V4Fun, Instruction as InstrV4,
         Junction as V4Junction, Junctions as V4Junctions, Xcm as V4Xcm,
     },
+    v5::{
+        Asset as V5Asset, AssetId as V5Aid, Instruction as InstrV5, Junctions as V5Junctions,
+        OriginKind, Xcm as V5Xcm,
+    },
 };
 
 fn format_junction(junction: &V3Junction) -> String {
@@ -111,6 +115,14 @@ pub trait XcmParser {
     fn parse_message(&self) -> Vec<XcmInstruction>;
 }
 
+pub trait XcmAssetFormatter {
+    fn format_fungible_to_string(&self) -> String;
+
+    fn format_amount_to_string(&self) -> String;
+
+    fn format_assetid_to_string(&self) -> (u8, String);
+}
+
 impl XcmParser for V3Xcm<()> {
     fn parse_message(&self) -> Vec<XcmInstruction> {
         self.0
@@ -182,7 +194,126 @@ impl XcmParser for V4Xcm<()> {
     }
 }
 
-#[derive(Default)]
+impl XcmParser for V5Xcm<()> {
+    fn parse_message(&self) -> Vec<XcmInstruction> {
+        self.0
+            .iter()
+            .map(|instr| {
+                let mut params = BTreeMap::new();
+                let name;
+
+                match instr {
+                    InstrV5::WithdrawAsset(assets) => {
+                        name = "WithdrawAsset".to_string();
+                        let mut assets_rows = Vec::new();
+                        for asset in assets.inner().iter() {
+                            assets_rows
+                                .push(format!("Location: {}", asset.format_assetid_to_string().1));
+                            assets_rows
+                                .push(format!("Asset: {}", asset.format_fungible_to_string()));
+                            assets_rows
+                                .push(format!("Amount: {}", asset.format_amount_to_string()));
+                        }
+                        params.insert("Assets".to_string(), assets_rows);
+                    }
+                    InstrV5::PayFees { asset } => {
+                        name = "PayFees".to_string();
+                        let mut assets_rows = Vec::new();
+                        assets_rows
+                            .push(format!("Location: {}", asset.format_assetid_to_string().1));
+                        assets_rows.push(format!("Asset: {}", asset.format_fungible_to_string()));
+                        assets_rows.push(format!("Amount: {}", asset.format_amount_to_string()));
+                        params.insert("Asset".to_string(), assets_rows);
+                    }
+                    InstrV5::Transact {
+                        origin_kind,
+                        fallback_max_weight,
+                        call,
+                    } => {
+                        name = "Transact".to_string();
+
+                        // Parse the origin kind
+                        let origin = match origin_kind {
+                            OriginKind::Native => "Native".to_string(),
+                            OriginKind::SovereignAccount => "SovereignAccount".to_string(),
+                            OriginKind::Xcm => "XCM".to_string(),
+                            OriginKind::Superuser => "Super-User".to_string(),
+                        };
+                        params.insert("Origin Kind".to_string(), vec![origin]);
+                        params.insert(
+                            "Maximum Fallback Weight".to_string(),
+                            vec![format!("{:?}", fallback_max_weight)],
+                        );
+
+                        let encoded_call = call.clone().into_encoded();
+                        let call_str = format!("0x{}", hex::encode(&encoded_call));
+                        let call_summary: String = if call_str.len() > 34 {
+                            format!(
+                                "{:?}.. ({} bytes total",
+                                &call_str[0..32],
+                                encoded_call.len()
+                            )
+                        } else {
+                            call_str
+                        };
+                        params.insert("CallPayload".to_string(), vec![call_summary]);
+                    }
+                    InstrV5::RefundSurplus => {
+                        name = "Refund Surplus".to_string();
+                        params.insert("Execution Note".to_string(), vec!["Calculates unspent execution fees dynamically at runtime.".to_string(),
+                        "Moves surplus weight from the holding register to the asset register.".to_string()]);
+                    }
+                    other => {
+                        name = format!("{:?}", other)
+                            .split('(')
+                            .next()
+                            .unwrap_or("Unknown")
+                            .to_string();
+                        params.insert("Raw".to_string(), vec![format!("{:#?}", other)]);
+                    }
+                };
+
+                XcmInstruction { name, params }
+            })
+            .collect()
+    }
+}
+
+impl XcmAssetFormatter for V5Asset {
+    fn format_fungible_to_string(&self) -> String {
+        match self.fun {
+            staging_xcm::v5::Fungibility::Fungible(_) => "Native".to_string(),
+            staging_xcm::v5::Fungibility::NonFungible(_) => "NFT".to_string(),
+        }
+    }
+
+    fn format_amount_to_string(&self) -> String {
+        let amount = match self.fun {
+            staging_xcm::v5::Fungibility::Fungible(amt) => amt,
+            staging_xcm::v5::Fungibility::NonFungible(_) => 0,
+        };
+
+        amount
+            .to_string()
+            .as_bytes()
+            .rchunks(3)
+            .rev()
+            .map(std::str::from_utf8)
+            .collect::<Result<Vec<&str>, _>>()
+            .unwrap()
+            .join(",")
+    }
+
+    fn format_assetid_to_string(&self) -> (u8, String) {
+        let interior = match self.id.0.interior() {
+            V5Junctions::Here => "Here".to_string(),
+            other => format!("{:?}", other),
+        };
+        (self.id.0.parents, interior)
+    }
+}
+
+#[derive(Default, Debug)]
 pub struct CError {
     pub error: String,
     pub message: String,
@@ -197,13 +328,13 @@ impl CError {
     }
 }
 
-#[derive(Debug, Default)]
+#[derive(Debug, Default, Clone)]
 pub struct XcmInstruction {
-    name: String,
-    params: BTreeMap<String, Vec<String>>,
+    pub name: String,
+    pub params: BTreeMap<String, Vec<String>>,
 }
 
-#[derive(Debug, Default)]
+#[derive(Debug, Default, Clone)]
 pub struct XcmMessage {
     /// XCM Version, (3 | 4 | 5)
     version: u32,
@@ -214,6 +345,24 @@ pub struct XcmMessage {
     bytes: usize,
     /// A list of each Instruction
     instructions: Vec<XcmInstruction>,
+}
+
+impl XcmMessage {
+    pub fn version(&self) -> u32 {
+        self.version
+    }
+
+    pub fn instructions(&self) -> Vec<XcmInstruction> {
+        self.clone().instructions
+    }
+
+    pub fn size(&self) -> usize {
+        self.size
+    }
+
+    pub fn bytes(&self) -> usize {
+        self.bytes
+    }
 }
 
 impl XcmMessage {
@@ -262,7 +411,7 @@ pub fn decode_xcm_message(message: String) -> Result<XcmMessage, CError> {
             instructions = xcm.parse_message();
         }
         VersionedXcm::V5(xcm) => {
-            println!("XCM message, {xcm:?}, {}", size);
+            instructions = xcm.parse_message();
         }
     }
 
